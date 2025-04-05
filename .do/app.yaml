@@ -1,0 +1,56 @@
+name: hedgefundai
+services:
+  - name: api
+    github:
+      branch: main
+      deploy_on_push: true
+      repo: YOUR_GITHUB_USERNAME/FedorPan
+    build_command: bash .do/build-do.sh
+    run_command: cd src/api && python3.11 run_api.py --port ${PORT:-8080}
+    envs:
+      - key: PYTHONPATH
+        value: /app
+      - key: PYTHON_VERSION
+        value: "3.11.7"
+      - key: FINNHUB_API_KEY
+        value: "cpu0ie1r01qnga5ioqugcpu0ie1r01qnga5ioqv0"
+        type: SECRET
+      - key: OPENAI_API_KEY
+        value: "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"
+        type: SECRET
+      - key: ALPACA_API_KEY
+        value: "PKH7MJQJ8EMHNMQ6UIB1"
+        type: SECRET
+      - key: ALPACA_API_SECRET
+        value: "WC3Sg54W52WqOp7ykkxWsayJ68HexAaBPUlgspnH"
+        type: SECRET
+      - key: ALPACA_BASE_URL
+        value: "https://paper-api.alpaca.markets/v2"
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: /api
+    source_dir: /
+    environment_slug: python
+    buildpacks:
+      - name: python
+      - url: https://github.com/heroku/heroku-buildpack-python.git
+        version: v214
+    run_time_stack_name: python
+    run_time_stack_major_version: "3.11"
+  - name: frontend
+    github:
+      branch: main
+      deploy_on_push: true
+      repo: YOUR_GITHUB_USERNAME/FedorPan
+    build_command: cd frontend && npm install && npm run build
+    run_command: cd frontend && npm start
+    envs:
+      - key: NEXT_PUBLIC_API_URL
+        value: ${_self.services.api.url}
+      - key: PORT
+        value: "3000"
+    http_port: 3000
+    instance_count: 1
+    instance_size_slug: basic-xxs 

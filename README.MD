@@ -136,3 +136,18 @@ python test_market_data.py
 - Система настроена на работу с 450 компаниями из S&P500 (исключая топ-50), что обеспечивает широкую диверсификацию и возможности для анализа.
 
 НЕ МОЖЕТ БЫТЬ РЕЗЕРВНОЙ ЛОГИКИ ИСПОЛЬЗУЮЩЕЙ МОКОВЫЕ ДАННЫЕ. ВСЕГДА ИЩИ ВАРИАНТ ИСПОЛЬЗОВАТЬ ДАННЫЕ ИЗ ВЕНДОРОВ.
+
+## Python Version Requirements
+
+This project requires Python 3.11 for compatibility with pandas and other data processing libraries. Python 3.13 is **not** compatible with the current pandas version used in this project.
+
+For local development:
+- Install Python 3.11: `pyenv install 3.11.7` 
+- Set it as your local Python version: `pyenv local 3.11.7`
+- Create a virtual environment: `python -m venv venv`
+- Activate the environment: `source venv/bin/activate`
+
+For deployment:
+- The project is configured to use Python 3.11 on DigitalOcean App Platform
+- We use a custom build script (.do/build-do.sh) that ensures the correct Python version
+- The runtime.txt file specifies Python 3.11.7 for platforms that support it

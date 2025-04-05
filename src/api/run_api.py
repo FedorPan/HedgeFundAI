@@ -8,7 +8,17 @@ from pathlib import Path
 import argparse
 import time
 import multiprocessing
-from asset_api import AssetAPI
+
+# Fix the import to use relative or absolute path
+try:
+    from asset_api import AssetAPI  # Try local import first
+except ImportError:
+    try:
+        from src.api.asset_api import AssetAPI  # Try absolute import
+    except ImportError:
+        import sys
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        from src.api.asset_api import AssetAPI
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

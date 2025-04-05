@@ -1,0 +1,15 @@
+{
+  "name": "HedgeFundAI",
+  "description": "Algorithmic trading system using fundamental analysis and AI for trading signals",
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "stack": "heroku-22",
+  "env": {
+    "PYTHONPATH": {
+      "value": "/app"
+    }
+  }
+} 

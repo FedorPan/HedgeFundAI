@@ -1,24 +1,51 @@
 #!/usr/bin/env python3
+"""
+API для доступа к данным, портфелю и аналитике HedgeFundAI.
+"""
 import os
-import logging
-import json
-from typing import Dict, List, Any, Optional, Union
-from pathlib import Path
-from datetime import datetime
-from fastapi import FastAPI, HTTPException, Depends, Query, Body, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-import pandas as pd
-import time
-
-# Импорты наших модулей
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from analysis.scoring_engine import ScoringEngine
-from analysis.ai_reasoner import AIReasoner
-from analysis.run_scoring import main as run_scoring_main
-from data.market_data_service import MarketDataService
+import time
+import json
+import logging
+import random
+from typing import Dict, List, Optional, Any, Union
+from pathlib import Path
+from fastapi import FastAPI, Query, Path as PathParam, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+import pandas as pd
+
+# Fix import paths
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+root_dir = os.path.dirname(parent_dir)
+if root_dir not in sys.path:
+    sys.path.append(root_dir)
+
+# Try different import paths
+try:
+    from analysis.ai_reasoner import AIReasoner
+    from analysis.scoring_engine import ScoringEngine
+    from analysis.run_scoring import main as run_scoring_main
+    from data.market_data_service import MarketDataService
+    try:
+        from trading.portfolio_manager import PortfolioManager
+    except ImportError:
+        logger.warning("Could not import PortfolioManager. Trading functionality will be limited.")
+        PortfolioManager = None
+except ImportError:
+    try:
+        from src.analysis.ai_reasoner import AIReasoner
+        from src.analysis.scoring_engine import ScoringEngine
+        from src.analysis.run_scoring import main as run_scoring_main
+        from src.data.market_data_service import MarketDataService
+        try:
+            from src.trading.portfolio_manager import PortfolioManager
+        except ImportError:
+            logger.warning("Could not import PortfolioManager. Trading functionality will be limited.")
+            PortfolioManager = None
+    except ImportError:
+        logging.error("Cannot import required modules. Check your PYTHONPATH.")
+        sys.exit(1)
 
 # Загрузка переменных окружения, если есть .env файл
 from dotenv import load_dotenv

@@ -1,0 +1,11 @@
+{
+  "python": {
+    "version": "3.11.7",
+    "runtime": "python-3.11.7"
+  },
+  "buildpack": {
+    "python": {
+      "version": "3.11.7"
+    }
+  }
+} 

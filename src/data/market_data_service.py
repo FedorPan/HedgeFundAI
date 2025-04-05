@@ -9,10 +9,18 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from datetime import datetime, timedelta
-from alpaca.trading.client import TradingClient
-from alpaca.data.historical import StockHistoricalDataClient
-from alpaca.data.requests import StockBarsRequest
-from alpaca.data.timeframe import TimeFrame
+
+# Try to import Alpaca, but don't fail if it's not available
+try:
+    from alpaca.trading.client import TradingClient
+    from alpaca.data.historical import StockHistoricalDataClient
+    from alpaca.data.requests import StockBarsRequest
+    from alpaca.data.timeframe import TimeFrame
+    ALPACA_AVAILABLE = True
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("Alpaca SDK not found. Trading functionality will be limited.")
+    ALPACA_AVAILABLE = False
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -67,17 +75,23 @@ class MarketDataService:
         # Инициализация клиентов API
         self.finnhub_client = finnhub.Client(api_key=self.finnhub_key) if self.finnhub_key else None
         
-        if self.alpaca_key and self.alpaca_secret:
-            self.alpaca_trading_client = TradingClient(
-                api_key=self.alpaca_key,
-                secret_key=self.alpaca_secret,
-                paper=True  # Использовать paper trading
-            )
-            
-            self.alpaca_data_client = StockHistoricalDataClient(
-                api_key=self.alpaca_key,
-                secret_key=self.alpaca_secret
-            )
+        # Initialize Alpaca clients only if the library is available
+        if ALPACA_AVAILABLE and self.alpaca_key and self.alpaca_secret:
+            try:
+                self.alpaca_trading_client = TradingClient(
+                    api_key=self.alpaca_key,
+                    secret_key=self.alpaca_secret,
+                    paper=True  # Использовать paper trading
+                )
+                
+                self.alpaca_data_client = StockHistoricalDataClient(
+                    api_key=self.alpaca_key,
+                    secret_key=self.alpaca_secret
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize Alpaca clients: {e}")
+                self.alpaca_trading_client = None
+                self.alpaca_data_client = None
         else:
             self.alpaca_trading_client = None
             self.alpaca_data_client = None
@@ -699,8 +713,8 @@ class MarketDataService:
                         else:
                             result['rating_trend_direction'] = "Stable"
                             
-                        # Добавляем поле trend для соответствия фронтенду
-                        result['trend'] = result['rating_trend_direction']
+                            # Добавляем поле trend для соответствия фронтенду
+                            result['trend'] = result['rating_trend_direction']
         except Exception as e:
             logger.warning(f"Ошибка при получении рекомендаций для {ticker}: {e}")
         

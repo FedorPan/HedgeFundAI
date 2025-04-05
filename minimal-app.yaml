@@ -1,0 +1,33 @@
+name: hedgefundai-py311
+region: nyc
+services:
+  - name: api
+    dockerfile_path: Dockerfile
+    source_dir: /
+    envs:
+      - key: PYTHONPATH
+        value: /app
+      - key: FINNHUB_API_KEY
+        scope: RUN_AND_BUILD_TIME
+        value: placeholder
+        type: SECRET
+      - key: OPENAI_API_KEY
+        scope: RUN_AND_BUILD_TIME
+        value: placeholder
+        type: SECRET
+      - key: ALPACA_API_KEY
+        scope: RUN_AND_BUILD_TIME
+        value: placeholder
+        type: SECRET
+      - key: ALPACA_API_SECRET
+        scope: RUN_AND_BUILD_TIME
+        value: placeholder
+        type: SECRET
+      - key: ALPACA_BASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: https://paper-api.alpaca.markets/v2
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: / 
