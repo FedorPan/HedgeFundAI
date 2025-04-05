@@ -40,6 +40,7 @@ class AIReasoner:
             logger.warning("API ключ OpenAI не найден. Генерация reasoning будет недоступна.")
             self.client = None
         else:
+            # Updated client initialization for compatibility
             self.client = OpenAI(api_key=self.api_key)
         
         logger.info(f"AIReasoner инициализирован. Директория: {self.reasoning_dir}, TTL: {ttl_days} дней")
@@ -49,6 +50,7 @@ class AIReasoner:
         if not self.api_key:
             raise ValueError("API ключ OpenAI не найден. Установите его в переменной окружения OPENAI_API_KEY или при инициализации AIReasoner.")
         if not self.client:
+            # Updated client initialization for compatibility
             self.client = OpenAI(api_key=self.api_key)
         return True
     
