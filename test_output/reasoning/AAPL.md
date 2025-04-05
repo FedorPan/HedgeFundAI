@@ -1,0 +1,5 @@
+# Investment Rationale: AAPL
+
+*Generated on: 2025-04-05 18:28:34*
+
+AAPL was selected for a long position due to its strong financial performance and favorable metrics compared to the rest of our investment universe. Its P/E ratio of 28.5, while higher than the average, is justified by its strong EPS growth of 15.2% over the past 12 months and robust ROE of 28.5%. Despite its size, with a market cap of $2.8T, AAPL has continued to deliver above-average YoY revenue growth of 8.1%. The stock also exhibits strong momentum with a 12.3% gain over the past 3 months and a relatively moderate level of volatility at 18.4%. Its debt-equity ratio of 1.2 is manageable and sentiment around the stock remains positive with a score of 0.75. These factors combined present a compelling case for AAPL's potential to deliver strong returns going forward.

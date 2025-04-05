@@ -1,0 +1,22 @@
+{
+  "INVH": {
+    "take_profit_pct": 0.16,
+    "stop_loss_pct": 0.04
+  },
+  "FTV": {
+    "take_profit_pct": 0.11,
+    "stop_loss_pct": 0.05
+  },
+  "HUBB": {
+    "take_profit_pct": 0.16,
+    "stop_loss_pct": 0.07
+  },
+  "LII": {
+    "take_profit_pct": 0.16,
+    "stop_loss_pct": 0.05
+  },
+  "LH": {
+    "take_profit_pct": 0.18,
+    "stop_loss_pct": 0.04
+  }
+}
