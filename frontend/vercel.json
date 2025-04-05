@@ -2,13 +2,16 @@
   "rewrites": [
     {
       "source": "/api/backend/:path*",
-      "destination": "http://localhost:8002/:path*"
+      "destination": "https://hedgefund-ai-lwmjr.ondigitalocean.app/:path*"
     }
   ],
   "env": {
-    "NEXT_PUBLIC_API_URL": "http://localhost:8002"
+    "NEXT_PUBLIC_API_URL": "https://hedgefund-ai-lwmjr.ondigitalocean.app"
   },
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "regions": ["iad1"],
+  "version": 2
 } 
