@@ -40,8 +40,20 @@ class AIReasoner:
             logger.warning("API ключ OpenAI не найден. Генерация reasoning будет недоступна.")
             self.client = None
         else:
-            # Updated client initialization for compatibility
-            self.client = OpenAI(api_key=self.api_key)
+            try:
+                # First attempt with standard initialization
+                self.client = OpenAI(api_key=self.api_key)
+            except TypeError as e:
+                if "proxies" in str(e):
+                    # If there's a proxies error, try with base_url instead
+                    logger.warning("OpenAI client initialization error with proxies. Trying alternative initialization.")
+                    self.client = OpenAI(
+                        api_key=self.api_key,
+                        base_url="https://api.openai.com/v1"
+                    )
+                else:
+                    # Re-raise other TypeErrors
+                    raise
         
         logger.info(f"AIReasoner инициализирован. Директория: {self.reasoning_dir}, TTL: {ttl_days} дней")
     
@@ -50,8 +62,20 @@ class AIReasoner:
         if not self.api_key:
             raise ValueError("API ключ OpenAI не найден. Установите его в переменной окружения OPENAI_API_KEY или при инициализации AIReasoner.")
         if not self.client:
-            # Updated client initialization for compatibility
-            self.client = OpenAI(api_key=self.api_key)
+            try:
+                # First attempt with standard initialization
+                self.client = OpenAI(api_key=self.api_key)
+            except TypeError as e:
+                if "proxies" in str(e):
+                    # If there's a proxies error, try with base_url instead
+                    logger.warning("OpenAI client initialization error with proxies. Trying alternative initialization.")
+                    self.client = OpenAI(
+                        api_key=self.api_key,
+                        base_url="https://api.openai.com/v1"
+                    )
+                else:
+                    # Re-raise other TypeErrors
+                    raise
         return True
     
     def get_cached_reasoning(self, ticker: str) -> Optional[Dict]:

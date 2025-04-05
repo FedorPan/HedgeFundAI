@@ -1026,6 +1026,25 @@ class TradingAPI:
                     )
                     api_test["success"] = True
                     api_test["response"] = response.choices[0].message.content
+                except TypeError as e:
+                    if "proxies" in str(e):
+                        try:
+                            # Alternative initialization without proxies
+                            client = OpenAI(
+                                api_key=key,
+                                base_url="https://api.openai.com/v1"
+                            )
+                            response = client.chat.completions.create(
+                                model="gpt-3.5-turbo",
+                                messages=[{"role": "user", "content": "Say hello"}],
+                                max_tokens=10
+                            )
+                            api_test["success"] = True
+                            api_test["response"] = response.choices[0].message.content
+                        except Exception as e2:
+                            api_test["error"] = f"Alternative init failed: {str(e2)}"
+                    else:
+                        api_test["error"] = str(e)
                 except Exception as e:
                     api_test["error"] = str(e)
             
@@ -1057,7 +1076,17 @@ class TradingAPI:
                     )
                 
                 # Создаем клиент OpenAI напрямую
-                client = OpenAI(api_key=key)
+                try:
+                    client = OpenAI(api_key=key)
+                except TypeError as e:
+                    if "proxies" in str(e):
+                        # Alternative initialization without proxies
+                        client = OpenAI(
+                            api_key=key,
+                            base_url="https://api.openai.com/v1"
+                        )
+                    else:
+                        raise
                 
                 # Делаем простой запрос
                 response = client.chat.completions.create(
