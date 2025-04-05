@@ -15,6 +15,7 @@ declare global {
 
 // Fix module declaration errors
 declare module 'react' {
+  interface ReactNode {}
   export = React;
 }
 
