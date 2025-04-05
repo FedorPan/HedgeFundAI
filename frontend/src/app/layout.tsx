@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: JSX.Element | JSX.Element[];
+}) {
   return (
     <html lang="en">
       <body className={inter.className}>

@@ -3,15 +3,18 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: ['localhost'],
+    domains: ['localhost', 'hedgefund-ai-lwmjr.ondigitalocean.app'],
   },
   async rewrites() {
     return [
       {
         source: '/api/backend/:path*',
-        destination: 'http://localhost:8002/:path*',
+        destination: 'https://hedgefund-ai-lwmjr.ondigitalocean.app/:path*',
       },
     ]
+  },
+  env: {
+    NEXT_PUBLIC_API_URL: 'https://hedgefund-ai-lwmjr.ondigitalocean.app'
   }
 }
 
