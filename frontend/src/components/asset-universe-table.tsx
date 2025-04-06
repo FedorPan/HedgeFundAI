@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect, useMemo, ChangeEvent } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -542,6 +541,8 @@ const assetsWithRecommendations = mockAssets.map(asset => {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
 // API proxy URL
 const API_PROXY_URL = '/api/backend';
+// Default page size for pagination
+const PAGE_SIZE = 50;
 
 // Add this function to update mock data with proper field mappings
 function mapFieldNames(assets: Asset[]): Asset[] {
@@ -570,14 +571,23 @@ function AssetUniverseTable() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [assets, setAssets] = React.useState<Asset[]>([])
   const [error, setError] = React.useState<string | null>(null)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const [hasMore, setHasMore] = React.useState(true)
+  const [loadingMore, setLoadingMore] = React.useState(false)
+  const observer = React.useRef<IntersectionObserver | null>(null)
+  const lastAssetRef = React.useRef<HTMLTableRowElement | null>(null)
   
   // Fetch asset data
-  const fetchAssets = async () => {
-    setIsLoading(true);
+  const fetchAssets = async (page = 1, refresh = false) => {
+    if (page === 1) {
+      setIsLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     setError(null);
     
     try {
-      const response = await fetch(`${API_PROXY_URL}/universe/stocks`);
+      const response = await fetch(`${API_PROXY_URL}/universe/stocks?page=${page}&limit=${PAGE_SIZE}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch assets: ${response.status} ${response.statusText}`);
       }
@@ -587,7 +597,7 @@ function AssetUniverseTable() {
         // Add ID to each asset for tracking
         const assetsWithIds = data.data.map((asset: any, index: number) => ({
           ...asset,
-          id: asset.id || index + 1,
+          id: asset.id || (page - 1) * PAGE_SIZE + index + 1,
           // Add portfolio/target flags if not present
           inPortfolio: asset.inPortfolio || false,
           inTarget: asset.inTarget || false
@@ -595,29 +605,66 @@ function AssetUniverseTable() {
         
         // Map field names to match our frontend interface
         const mappedAssets = mapFieldNames(assetsWithIds);
-        setAssets(mappedAssets);
+        
+        if (page === 1 || refresh) {
+          setAssets(mappedAssets);
+        } else {
+          setAssets(prev => [...prev, ...mappedAssets]);
+        }
+        
+        // If we received fewer items than the page size, we've reached the end
+        setHasMore(mappedAssets.length === PAGE_SIZE);
+        setCurrentPage(page);
       } else {
         console.warn("API returned success=false or invalid data format", data);
         // Fallback to mock data
         const mappedMockAssets = mapFieldNames(assetsWithRecommendations);
-        setAssets(mappedMockAssets);
+        if (page === 1) {
+          setAssets(mappedMockAssets);
+        }
         setError("Failed to load data from API, using mock data instead");
+        setHasMore(false);
       }
     } catch (err) {
       console.error("Error fetching assets:", err);
       // Fallback to mock data
       const mappedMockAssets = mapFieldNames(assetsWithRecommendations);
-      setAssets(mappedMockAssets);
+      if (page === 1) {
+        setAssets(mappedMockAssets);
+      }
       setError(`Failed to load data: ${err instanceof Error ? err.message : String(err)}`);
+      setHasMore(false);
     } finally {
-      setIsLoading(false);
+      if (page === 1) {
+        setIsLoading(false);
+      } else {
+        setLoadingMore(false);
+      }
     }
   };
   
   // Fetch data on mount
   React.useEffect(() => {
-    fetchAssets();
+    fetchAssets(1, true);
   }, []);
+  
+  // Load more data when scrolling to the bottom
+  const lastAssetElementRef = React.useCallback((node: HTMLTableRowElement | null) => {
+    if (isLoading || loadingMore) return;
+    
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        fetchAssets(currentPage + 1);
+      }
+    }, { threshold: 0.5 });
+    
+    if (node) {
+      lastAssetRef.current = node;
+      observer.current.observe(node);
+    }
+  }, [isLoading, loadingMore, hasMore, currentPage]);
   
   // Filter assets based on search query
   const filteredAssets = React.useMemo(() => {
@@ -667,7 +714,8 @@ function AssetUniverseTable() {
   // Handle refresh data
   const handleRefreshData = () => {
     setIsRefreshing(true);
-    fetchAssets().finally(() => {
+    setCurrentPage(1);
+    fetchAssets(1, true).finally(() => {
       setIsRefreshing(false);
     });
   };
@@ -1009,8 +1057,12 @@ function AssetUniverseTable() {
                 </tr>
               </thead>
               <tbody>
-                {sortedAssets.map((asset: Asset) => (
-                  <tr key={asset.id || asset.ticker} className="border-b hover:bg-gray-50">
+                {sortedAssets.map((asset: Asset, index: number) => (
+                  <tr 
+                    key={asset.id || asset.ticker} 
+                    className="border-b hover:bg-gray-50" 
+                    ref={index === sortedAssets.length - 1 ? lastAssetElementRef : null}
+                  >
                     <td className="px-4 py-2 font-medium">{asset.ticker}</td>
                     <td className={`px-4 py-2 text-right ${asset.score && asset.score >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {asset.score !== undefined ? `${asset.score >= 0 ? "+" : ""}${formatNumber(asset.score, 1)}` : "-"}
@@ -1086,12 +1138,32 @@ function AssetUniverseTable() {
                     </td>
                   </tr>
                 ))}
+                {loadingMore && (
+                  <tr>
+                    <td colSpan={13} className="text-center py-4">
+                      <div className="flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-gray-700 mr-2"></div>
+                        <span>Loading more assets...</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           )}
         </div>
-        <div className="text-xs text-muted-foreground mt-4">
-          Showing {filteredAssets.length} of {assets.length} assets
+        <div className="text-xs text-muted-foreground mt-4 flex justify-between items-center">
+          <span>Showing {filteredAssets.length} assets</span>
+          {hasMore && !loadingMore && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => fetchAssets(currentPage + 1)}
+              disabled={isLoading || loadingMore}
+            >
+              Load More
+            </Button>
+          )}
         </div>
       </CardContent>
       
