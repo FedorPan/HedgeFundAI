@@ -587,12 +587,29 @@ function AssetUniverseTable() {
     setError(null);
     
     try {
+      console.log(`Fetching assets from ${API_PROXY_URL}/universe/stocks?page=${page}&limit=${PAGE_SIZE}`);
       const response = await fetch(`${API_PROXY_URL}/universe/stocks?page=${page}&limit=${PAGE_SIZE}`);
+      
+      // Log more details about the response
+      console.log(`API Response status: ${response.status} ${response.statusText}`);
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch assets: ${response.status} ${response.statusText}`);
+        let errorMessage = `Failed to fetch assets: ${response.status} ${response.statusText}`;
+        try {
+          // Try to parse error details if available
+          const errorData = await response.json();
+          if (errorData && errorData.message) {
+            errorMessage += ` - ${errorData.message}`;
+          }
+        } catch (e) {
+          // Ignore JSON parsing errors
+        }
+        throw new Error(errorMessage);
       }
       
       const data = await response.json();
+      console.log("API data received:", data);
+      
       if (data.success && Array.isArray(data.data)) {
         // Add ID to each asset for tracking
         const assetsWithIds = data.data.map((asset: any, index: number) => ({
@@ -622,7 +639,7 @@ function AssetUniverseTable() {
         if (page === 1) {
           setAssets(mappedMockAssets);
         }
-        setError("Failed to load data from API, using mock data instead");
+        setError(`Failed to load data: ${data.message || "API returned invalid data format"}`);
         setHasMore(false);
       }
     } catch (err) {
