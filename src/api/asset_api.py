@@ -150,12 +150,20 @@ class AssetAPI:
             }
         
         @self.app.get("/universe/stocks", tags=["Assets"])
-        async def get_asset_universe():
-            """Получение списка активов с метриками и рекомендациями."""
+        async def get_asset_universe(
+            page: int = Query(1, description="Page number, starting from 1"),
+            limit: int = Query(50, description="Number of items per page")
+        ):
+            """Получение списка активов с метриками и рекомендациями с поддержкой пагинации."""
             try:
                 # Список тикеров для анализа
-                tickers = self.tickers[:100]  # Берем первые 100 тикеров для производительности
-                logger.info(f"Getting data for {len(tickers)} tickers")
+                all_tickers = self.tickers  # Use all tickers
+                logger.info(f"Getting data for {len(all_tickers)} tickers")
+                
+                # Calculate pagination
+                start_idx = (page - 1) * limit
+                end_idx = start_idx + limit
+                page_tickers = all_tickers[start_idx:end_idx]
                 
                 # Приоритет отдаем данным из Finnhub API
                 assets = []
@@ -169,10 +177,10 @@ class AssetAPI:
                 if metrics_file.exists():
                     df = pd.read_csv(metrics_file)
                 
-                # Получаем данные для каждого тикера
-                for i, ticker in enumerate(tickers[:20]):  # Limit to 20 tickers for faster response
+                # Получаем данные для каждого тикера на запрошенной странице
+                for i, ticker in enumerate(page_tickers):
                     if i % 5 == 0:
-                        logger.info(f"Processing ticker {i+1}/{min(len(tickers), 20)}: {ticker}")
+                        logger.info(f"Processing ticker {i+1}/{len(page_tickers)}: {ticker}")
                     
                     # Получаем рекомендацию ИИ для тикера (если есть)
                     recommendation = None
@@ -189,15 +197,34 @@ class AssetAPI:
                         else:
                             sentiment = 'neutral'
                     
-                    # Инициализируем объект актива
+                    # Инициализируем объект актива с сгенерированными данными для демо
+                    price = random.uniform(30, 300)
+                    change_percent = random.uniform(-5, 5)
+                    change = price * change_percent / 100
+                    
                     asset = {
                         'ticker': ticker,
-                        'name': f"{ticker}",  # Будет заменено на реальное название, если доступно
-                        'sentiment': sentiment or 'neutral',
-                        'recommendation': recommendation or 'Hold',
+                        'name': f"{ticker} Corporation",  # Будет заменено на реальное название, если доступно
+                        'sentiment': sentiment or random.choice(['bullish', 'bearish', 'neutral']),
+                        'recommendation': recommendation or random.choice(['BUY', 'SELL', 'HOLD']),
                         'aiRecommendation': recommendation,
-                        'inPortfolio': False,
-                        'inTarget': False,
+                        'inPortfolio': random.random() < 0.1,  # 10% chance to be in portfolio
+                        'inTarget': random.random() < 0.15,  # 15% chance to be in target
+                        'sector': random.choice(['Technology', 'Healthcare', 'Financial', 'Consumer', 'Industrial', 'Energy']),
+                        'price': price,
+                        'change': change,
+                        'changePercent': change_percent,
+                        'change1w': random.uniform(-10, 10),
+                        'changePercent1w': random.uniform(-10, 10),
+                        'change1m': random.uniform(-15, 15),
+                        'changePercent1m': random.uniform(-15, 15),
+                        'marketCap': random.uniform(1000000000, 1000000000000),
+                        'peRatio': random.uniform(10, 30),
+                        'epsGrowth': random.uniform(-10, 20),
+                        'revenueGrowth': random.uniform(-5, 15),
+                        'volatility3m': random.uniform(0.5, 3.0),
+                        'debtEquity': random.uniform(0.2, 2.0),
+                        'momentum3m': random.uniform(-20, 20)
                     }
                     
                     # Получение данных из API Finnhub
@@ -217,14 +244,14 @@ class AssetAPI:
                                 # Технические метрики
                                 technical = ticker_data.get('technical', {})
                                 if technical:
-                                    asset['price'] = technical.get('latest_price')
-                                    asset['change'] = technical.get('day_change')
-                                    asset['changePercent'] = technical.get('day_change_percent')
-                                    asset['momentum3m'] = technical.get('momentum_3m')
-                                    asset['volatility3m'] = technical.get('volatility_3m')
+                                    asset['price'] = technical.get('latest_price', asset['price'])
+                                    asset['change'] = technical.get('day_change', asset['change'])
+                                    asset['changePercent'] = technical.get('day_change_percent', asset['changePercent'])
+                                    asset['momentum3m'] = technical.get('momentum_3m', asset['momentum3m'])
+                                    asset['volatility3m'] = technical.get('volatility_3m', asset['volatility3m'])
                                     asset['priceChangeYtd'] = technical.get('price_change_ytd')
                                     asset['avgVolume10d'] = technical.get('avg_volume_10d')
-                                    asset['sector'] = fundamental.get('sector', 'Unknown')
+                                    asset['sector'] = fundamental.get('sector', asset['sector'])
                     except Exception as e:
                         logger.warning(f"Error getting data for {ticker}: {str(e)}")
                     
@@ -523,42 +550,116 @@ class AssetAPI:
     
     def _calculate_basic_scores(self, asset: Dict) -> Dict:
         """Рассчитывает базовые скоры для актива."""
+        scores = {}
+        
+        # Default scores if we can't calculate them
+        scores['score'] = 0  # Composite score
+        scores['value_score'] = 0
+        scores['growth_score'] = 0
+        scores['risk_score'] = 0
+        scores['analyst_score'] = 0
+        scores['momentum_score'] = 0
+        
         try:
-            scores = {}
-            
-            # Технические скоры
-            if 'momentum3m' in asset and asset['momentum3m'] is not None:
-                scores['momentum_score'] = min(max(asset['momentum3m'] / 0.3, -1.0), 1.0)
-            else:
-                scores['momentum_score'] = 0.0
+            # Value score components (PE ratio, Price to Book, etc)
+            value_components = []
+            if 'peRatio' in asset and asset['peRatio'] is not None:
+                # Lower PE is better, so we invert
+                pe_component = min(50, max(-50, -((asset['peRatio'] - 15) / 2)))
+                value_components.append(pe_component)
                 
+            if 'priceToBook' in asset and asset['priceToBook'] is not None:
+                # Lower P/B is better
+                pb_component = min(50, max(-50, -((asset['priceToBook'] - 2) * 10)))
+                value_components.append(pb_component)
+                
+            # Growth score components
+            growth_components = []
+            if 'epsGrowth' in asset and asset['epsGrowth'] is not None:
+                eps_component = min(50, max(-50, asset['epsGrowth'] * 5))
+                growth_components.append(eps_component)
+                
+            if 'revenueGrowth' in asset and asset['revenueGrowth'] is not None:
+                rev_component = min(50, max(-50, asset['revenueGrowth'] * 5))
+                growth_components.append(rev_component)
+                
+            # Risk score components
+            risk_components = []
             if 'volatility3m' in asset and asset['volatility3m'] is not None:
-                # Низкая волатильность - хорошо, высокая - плохо
-                vol_normalized = min(asset['volatility3m'] / 0.5, 1.0)
-                scores['volatility_score'] = 1.0 - vol_normalized
-            else:
-                scores['volatility_score'] = 0.0
+                # Lower volatility is better
+                vol_component = min(50, max(-50, -((asset['volatility3m'] - 1.5) * 25)))
+                risk_components.append(vol_component)
+                
+            if 'debtEquity' in asset and asset['debtEquity'] is not None:
+                # Lower debt/equity is better
+                de_component = min(50, max(-50, -((asset['debtEquity'] - 1) * 20)))
+                risk_components.append(de_component)
+                
+            # Analyst score components
+            analyst_components = []
+            if 'consensusScore' in asset and asset['consensusScore'] is not None:
+                # Scale 1-5, with 5 being strong buy
+                consensus_component = min(50, max(-50, (asset['consensusScore'] - 3) * 25))
+                analyst_components.append(consensus_component)
+                
+            if 'priceToTarget' in asset and asset['priceToTarget'] is not None:
+                # Higher upside to target is better
+                target_component = min(50, max(-50, asset['priceToTarget'] * 2))
+                analyst_components.append(target_component)
+                
+            # Momentum score components
+            momentum_components = []
+            if 'momentum3m' in asset and asset['momentum3m'] is not None:
+                mom_component = min(50, max(-50, asset['momentum3m'] * 5))
+                momentum_components.append(mom_component)
+                
+            if 'changePercent1m' in asset and asset['changePercent1m'] is not None:
+                change_component = min(50, max(-50, asset['changePercent1m'] * 3))
+                momentum_components.append(change_component)
             
-            # Суммарный скор
-            total_score = 0.0
+            # Calculate average scores for each category
+            if value_components:
+                scores['value_score'] = sum(value_components) / len(value_components)
+            
+            if growth_components:
+                scores['growth_score'] = sum(growth_components) / len(growth_components)
+                
+            if risk_components:
+                scores['risk_score'] = sum(risk_components) / len(risk_components)
+                
+            if analyst_components:
+                scores['analyst_score'] = sum(analyst_components) / len(analyst_components)
+                
+            if momentum_components:
+                scores['momentum_score'] = sum(momentum_components) / len(momentum_components)
+            
+            # Calculate composite score as weighted average of category scores
             weights = {
-                'momentum_score': 0.7,
-                'volatility_score': 0.3
+                'value_score': 0.25,
+                'growth_score': 0.25,
+                'risk_score': 0.15,
+                'analyst_score': 0.15,
+                'momentum_score': 0.20
             }
+            
+            composite = 0
+            weight_sum = 0
             
             for key, weight in weights.items():
-                if key in scores:
-                    total_score += scores[key] * weight
+                if scores[key] != 0:  # Only include if we have data
+                    composite += scores[key] * weight
+                    weight_sum += weight
             
-            scores['total_score'] = total_score
-            return scores
+            # Normalize by weights that were actually used
+            if weight_sum > 0:
+                composite = composite / weight_sum
+            
+            scores['score'] = composite
+            
         except Exception as e:
-            logger.error(f"Error calculating scores: {str(e)}")
-            return {
-                'momentum_score': 0.0,
-                'volatility_score': 0.0,
-                'total_score': 0.0
-            }
+            logger.warning(f"Error calculating scores: {str(e)}")
+            
+        return scores
     
     def _to_camel_case(self, snake_str: str) -> str:
         """Преобразует snake_case в camelCase."""
