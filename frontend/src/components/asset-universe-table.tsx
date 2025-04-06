@@ -539,8 +539,8 @@ const assetsWithRecommendations = mockAssets.map(asset => {
 
 // Base API URL for direct access (used for debugging only)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
-// API proxy URL
-const API_PROXY_URL = '/api/backend';
+// API proxy URL for backend access
+const API_PROXY_URL = '/api/proxy';
 // Default page size for pagination
 const PAGE_SIZE = 50;
 
@@ -587,8 +587,8 @@ function AssetUniverseTable() {
     setError(null);
     
     try {
-      console.log(`Fetching assets from ${API_PROXY_URL}/universe/stocks?page=${page}&limit=${PAGE_SIZE}`);
-      const response = await fetch(`${API_PROXY_URL}/universe/stocks?page=${page}&limit=${PAGE_SIZE}`);
+      console.log(`Fetching assets from ${API_PROXY_URL}?endpoint=universe/stocks&page=${page}&limit=${PAGE_SIZE}`);
+      const response = await fetch(`${API_PROXY_URL}?endpoint=universe/stocks&page=${page}&limit=${PAGE_SIZE}`);
       
       // Log more details about the response
       console.log(`API Response status: ${response.status} ${response.statusText}`);
