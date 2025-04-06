@@ -83,7 +83,14 @@ class AssetAPI:
         # Настройка CORS
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],
+            allow_origins=[
+                "https://hedge-fund-ai-9rtp-397udsktq-fedorpans-projects.vercel.app",
+                "https://hedgefundai.vercel.app",
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "http://localhost:3002",
+                "*"  # Fallback to allow all origins during development
+            ],
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
