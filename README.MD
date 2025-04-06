@@ -151,3 +151,12 @@ For deployment:
 - The project is configured to use Python 3.11 on DigitalOcean App Platform
 - We use a custom build script (.do/build-do.sh) that ensures the correct Python version
 - The runtime.txt file specifies Python 3.11.7 for platforms that support it
+## 🌐 Deployment
+
+### Backend API on DigitalOcean
+- URL: https://hedgefund-ai-lwmjr.ondigitalocean.app/
+- Deployed using DigitalOcean App Platform
+
+### Frontend on Vercel
+- Deployed using Vercel platform
+- Connected to the DigitalOcean backend API
