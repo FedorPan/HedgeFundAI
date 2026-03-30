@@ -29,4 +29,9 @@ black==23.9.1
 flake8==6.1.0
 
 # Additional dependencies
-python-multipart==0.0.6 
+python-multipart==0.0.6
+
+# Telegram bot
+python-telegram-bot==20.7
+APScheduler==3.10.4
+pytz==2024.1
